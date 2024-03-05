@@ -79,7 +79,7 @@ class App extends Component {
   };
 
   openModal = evt => {
-    debugger;
+    // debugger;
     console.log(evt);
     const itemId = evt.target.id;
     const { searchResults } = this.state;
