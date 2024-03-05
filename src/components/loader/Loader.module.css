@@ -1,0 +1,14 @@
+.spinner {
+  color: #ffdd00;
+  height: 60px;
+}
+
+.overlay {
+  /* background-color: rgba(0, 0, 0, 0.3); */
+  display: flex;
+  justify-content: center;
+  /* align-items: center; */
+  /* height: 87vh; */
+  /* position: absolute; */
+  /* width: 100vw; */
+}
