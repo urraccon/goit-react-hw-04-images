@@ -1,135 +1,82 @@
-import { Component } from 'react';
 import styles from './App.module.css';
 import SearchBar from './search-bar/SearchBar';
-import axios from 'axios';
-import Loader from './loader/Loader';
+import Loader from './common/loader/Loader';
 import ImageGallery from './image-gallery/ImageGallery';
-import Button from './button/Button';
-import Modal from './modal/Modal';
+import Button from './common/button/Button';
+import Modal from './common/modal/Modal';
+import imageService from './service/imageService';
+import { useEffect, useState } from 'react';
 
-axios.defaults.baseURL = 'https://pixabay.com/api';
-const API_KEY = '41393795-c06419c206da666f6a710e150';
+const App = () => {
+  const [term, setTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadMoreBtnVisible, setIsLoadMoreBtnVisible] = useState(false);
+  const [page, setPage] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [image, setImage] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-class App extends Component {
-  state = {
-    term: '',
-    isLoading: false,
-    isMoreResults: false,
-    page: '',
-    searchResults: [],
-    modalImage: [],
-    isModalOpen: false,
-  };
+  useEffect(() => {
+    async function getImage(term, page) {
+      const response = await imageService.get(term, page);
 
-  async requestData(term, page) {
-    // debugger;
-    try {
-      this.setState({
-        isLoading: true,
-      });
-      const response = await axios.get(
-        `/?q=${term}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
-      );
-
-      const data = response.data.hits;
-      // console.log(data.length);
-      if (data.length === 0) {
-        this.setState({
-          isMoreResults: false,
-        });
+      if (response.length !== 0) {
+        setSearchResults(prev => prev.concat(response));
+        setIsLoadMoreBtnVisible(true);
       } else {
-        console.log(data);
-        this.setState(prev => {
-          return {
-            searchResults: prev.searchResults.concat(data),
-            isMoreResults: true,
-          };
-        });
+        setIsLoadMoreBtnVisible(false);
       }
-    } catch (err) {
-      window.alert(`error: ${err.message}`);
-    } finally {
-      this.setState({
-        isLoading: false,
-      });
     }
-  }
 
-  searchTerm = evt => {
+    if (page !== '') {
+      setIsLoading(true);
+
+      getImage(term, page)
+        .catch(err => window.alert(`error: ${err}`))
+        .finally(() => setIsLoading(false));
+    }
+  }, [term, page]);
+
+  const search = evt => {
     evt.preventDefault();
-    console.log(evt);
-    const term = evt.target[1].value;
-    const page = 1;
-    this.setState({
-      page,
-      term,
-      searchResults: [],
-    });
-    this.requestData(term, page);
-  };
+    const searchTerm = evt.target[1].value;
 
-  loadMoreResults = () => {
-    const { page, term } = this.state;
-    // debugger;
-    const nextPage = page + 1;
-    this.setState({
-      page: nextPage,
-    });
-    this.requestData(term, nextPage);
-  };
-
-  openModal = evt => {
-    // debugger;
-    console.log(evt);
-    const itemId = evt.target.id;
-    const { searchResults } = this.state;
-    // debugger;
-    const item = searchResults.filter(elem => elem.id === Number(itemId));
-    // console.log(item);
-    this.setState({
-      openImage: item,
-      isModalOpen: true,
-    });
-    document.addEventListener('keydown', this.keyDownHandler);
-  };
-
-  keyDownHandler = evt => {
-    console.log(evt.key);
-    if (evt.key === 'Escape') {
-      this.setState({
-        isModalOpen: false,
-      });
-      document.removeEventListener('keydown', this.keyDownHandler);
+    if (term !== searchTerm) {
+      setTerm(searchTerm);
+      setPage(1);
+      setSearchResults([]);
     }
   };
 
-  render() {
-    const { isLoading, searchResults, isMoreResults, openImage, isModalOpen } =
-      this.state;
-    console.log(searchResults);
-    return (
-      <>
-        <div className={styles.app}>
-          <SearchBar onSubmit={this.searchTerm} />
-          <ImageGallery items={searchResults} onClick={this.openModal} />
-          {isLoading && <Loader />}
-          {!isLoading && isMoreResults && (
-            <Button onClick={this.loadMoreResults}>Load More</Button>
-          )}
-          {isModalOpen && (
-            <Modal
-              item={openImage}
-              onClick={() => {
-                this.setState({
-                  isModalOpen: false,
-                });
-              }}
-            />
-          )}
-        </div>
-      </>
-    );
-  }
-}
+  const loadMoreResults = () => {
+    setPage(page + 1);
+  };
+
+  const openImage = evt => {
+    const imageId = evt.target.id;
+    const image = searchResults.filter(elem => elem.id === Number(imageId));
+    setImage(image);
+    setIsModalOpen(true);
+  };
+
+  const closeImage = () => {
+    setIsModalOpen(false);
+  };
+
+  console.log(searchResults);
+  return (
+    <>
+      <div className={styles.app}>
+        <SearchBar onSubmit={search} />
+        <ImageGallery images={searchResults} onClick={openImage} />
+        {isLoading && <Loader />}
+        {!isLoading && isLoadMoreBtnVisible && (
+          <Button onClick={loadMoreResults}>Load More</Button>
+        )}
+        {isModalOpen && <Modal image={image} closeImage={closeImage} />}
+      </div>
+    </>
+  );
+};
 
 export default App;
