@@ -37,6 +37,10 @@ const App = () => {
     }
   }, [term, page]);
 
+  useEffect(() => {
+    if (image.length !== 0) setIsModalOpen(true);
+  }, [image]);
+
   const search = evt => {
     evt.preventDefault();
     const searchTerm = evt.target[1].value;
@@ -56,14 +60,13 @@ const App = () => {
     const imageId = evt.target.id;
     const image = searchResults.filter(elem => elem.id === Number(imageId));
     setImage(image);
-    setIsModalOpen(true);
   };
 
   const closeImage = () => {
     setIsModalOpen(false);
   };
 
-  console.log(searchResults);
+  // console.log(searchResults);
   return (
     <>
       <div className={styles.app}>
